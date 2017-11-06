@@ -36,7 +36,7 @@ if (GVAR(isProne)) then {
     _currentSpeed = _currentSpeed min 1.5;
 };
 
-if ((vehicle ACE_player == ACE_player) && {_currentSpeed > 0.1} && {isTouchingGround ACE_player || {underwater ACE_player}}) then {
+if ((vehicle ACE_player == ACE_player) && _currentSpeed > 0.1 && (isTouchingGround ACE_player || {underwater ACE_player})) then {
     _currentWork = [ACE_player, _currentSpeed, _fwdAngle, _sideAngle] call FUNC(getMetabolicCosts);
     _currentWork = _currentWork max REE;
 };
