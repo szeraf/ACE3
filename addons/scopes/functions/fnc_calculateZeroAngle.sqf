@@ -1,6 +1,6 @@
 /*
  * Author: Ruthberg
- * Calculates the zero angle correction for the new zero range based on current zero range and bore height (distance between bore- and sight axis)
+ * Calculates the required zero angle for the given zero range with respect to the bore height (distance between bore- and sight axis)
  *
  * Arguments:
  * 0: Zero range <NUMBER>
@@ -14,13 +14,13 @@
  * zeroAngleCorrection <NUMBER>
  *
  * Example:
- * [5, 6, gun, ammo, magazine, true] call ace_scopes_fnc_calculateZeroAngleCorrection
+ * [5, 6, gun, ammo, magazine, true] call ace_scopes_fnc_calculateZeroAngle
  *
  * Public: No
  */
 #include "script_component.hpp"
 
-params ["_oldZeroRange", "_newZeroRange", "_boreHeight"/*in cm*/, "_weapon", "_ammo", "_magazine", "_advancedBallistics"];
+params ["_zeroRange", "_boreHeight"/*in cm*/, "_weapon", "_ammo", "_magazine", "_advancedBallistics"];
 
 private _airFriction = getNumber (configFile >> "CfgAmmo" >> _ammo >> "airFriction");
 private _initSpeed = getNumber(configFile >> "CfgMagazines" >> _magazine >> "initSpeed");
@@ -32,11 +32,8 @@ if (_initSpeedCoef < 0) then {
     _initSpeed = _initSpeed * (-1 * _initSpeedCoef);
 };
 
-private _zeroAngle = "ace_advanced_ballistics" callExtension format ["zeroAngleVanilla:%1:%2:%3:%4", _oldZeroRange, _initSpeed, _airFriction, 0];
-private _vanillaZero = parseNumber _zeroAngle;
-
 private _trueZero = if (!_advancedBallistics) then {
-    _zeroAngle = "ace_advanced_ballistics" callExtension format ["zeroAngleVanilla:%1:%2:%3:%4", _newZeroRange, _initSpeed, _airFriction, _boreHeight];
+    private _zeroAngle = "ace_advanced_ballistics" callExtension format ["zeroAngleVanilla:%1:%2:%3:%4", _zeroRange, _initSpeed, _airFriction, _boreHeight];
     (parseNumber _zeroAngle)
 } else {
     // Get Weapon and Ammo Configurations
@@ -57,12 +54,10 @@ private _trueZero = if (!_advancedBallistics) then {
         _initSpeed = _initSpeed + _barrelVelocityShift;
     };
 
-    _zeroAngle = "ace_advanced_ballistics" callExtension format ["zeroAngle:%1:%2:%3:%4:%5:%6:%7:%8:%9", _newZeroRange, _initSpeed, _boreHeight, GVAR(zeroReferenceTemperature), GVAR(zeroReferenceBarometricPressure), GVAR(zeroReferenceHumidity), _ballisticCoefficients select 0, _dragModel, _atmosphereModel];
+    private _zeroAngle = "ace_advanced_ballistics" callExtension format ["zeroAngle:%1:%2:%3:%4:%5:%6:%7:%8:%9", _zeroRange, _initSpeed, _boreHeight, GVAR(zeroReferenceTemperature), GVAR(zeroReferenceBarometricPressure), GVAR(zeroReferenceHumidity), _ballisticCoefficients select 0, _dragModel, _atmosphereModel];
     (parseNumber _zeroAngle)
 };
 
-private _zeroAngleCorrection = _trueZero - _vanillaZero;
+missionNamespace setVariable [format[QGVAR(%1_%2_%3_%4_%5_%6), _zeroRange, _boreHeight, _weapon, _ammo, _magazine, _advancedBallistics], _trueZero];
 
-missionNamespace setVariable [format[QGVAR(%1_%2_%3_%4_%5_%6_%7), _oldZeroRange, _newZeroRange, _boreHeight, _weapon, _ammo, _magazine, _advancedBallistics], _zeroAngleCorrection];
-
-_zeroAngleCorrection
+_trueZero
